@@ -36,7 +36,7 @@
                       <tbody>
                         {% for i in student_leave %}
                          <tr>
-                            <td>{{i.id}}</td>
+                            <td>{{ forloop.counter }}</td>
                             
                             <td>{{i.student_id.admin.first_name}}</td>
                             

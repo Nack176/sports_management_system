@@ -39,7 +39,7 @@
                           <tbody>
                             {% for i in feedback %}
                              <tr>
-                                <td>{{i.id}}</td>
+                                <td>{{ forloop.counter }}</td>
                                 <td>
                                    <h2 class="table-avatar">
                                       <a href="student-details.html" class="avatar avatar-sm mr-2"><img class="avatar-img rounded-circle" src="/{{i.staff_id.admin.profile_pic}}" alt="User Image"></a>

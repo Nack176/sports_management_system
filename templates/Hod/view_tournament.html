@@ -38,7 +38,7 @@
                       <tbody>
                         {% for i in tournament %}
                          <tr>
-                            <td>{{i.id}}</td>
+                            <td>{{ forloop.counter }}</td>
                             
                             <td>{{i.name}}</td>
                             <td>{{i.sport}}</td>

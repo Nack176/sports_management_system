@@ -35,7 +35,7 @@
                       <tbody>
                         {% for i in session %}
                          <tr>
-                            <td>{{i.id}}</td>
+                            <td>{{ forloop.counter }}</td>
                             
                             <td>{{i.session_start}}</td>
                             <td>{{i.session_end}}</td>

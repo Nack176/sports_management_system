@@ -108,7 +108,6 @@ def EDIT_STUDENT(request,id):
 def UPDATE_STUDENT(request):
     if request.method == "POST":
         student_id = request.POST.get('student_id')
-        print(student_id)
         profile_pic = request.FILES.get('profile_pic')
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
@@ -119,6 +118,11 @@ def UPDATE_STUDENT(request):
         gender = request.POST.get('gender')
         sport_id = request.POST.get('sport_id')
         session_year_id = request.POST.get('session_year_id')
+
+        # Validate student_id, sport_id and session_year_id
+        if not student_id or student_id == "" or sport_id == "Select Sport" or session_year_id == "Select Session":
+            messages.error(request, "Please provide valid Student, Sport and Session Year.")
+            return redirect('edit_student', id=student_id if student_id else 0)
 
         user = CustomUser.objects.get(id = student_id)
         
@@ -151,8 +155,15 @@ def UPDATE_STUDENT(request):
 
 @login_required(login_url='/')
 def DELETE_STUDENT(request,admin):
-    student = CustomUser.objects.get(id = admin)
-    student.delete()
+    student_user = CustomUser.objects.get(id=admin)
+    try:
+        student = Student.objects.get(admin=student_user)
+        # Delete related Attendance_Report objects to avoid FK constraint error
+        from app.models import Attendance_Report
+        Attendance_Report.objects.filter(student_id=student).delete()
+    except Student.DoesNotExist:
+        pass
+    student_user.delete()
     messages.success(request,'Record Are Successfully Deleted !')
 
     return redirect('view_student')
@@ -204,6 +215,20 @@ def UPDATE_SPORT(request):
 @login_required(login_url='/')
 def DELETE_SPORT(request,id):
     sport = Sport.objects.get(id = id)
+    try:
+        from app.models import Student, Attendance_Report, Attendance, Tournament
+        # Delete Attendance_Report and Attendance related to Students of this sport
+        students = Student.objects.filter(sport_id=sport)
+        for student in students:
+            Attendance_Report.objects.filter(student_id=student).delete()
+        # Delete Attendance related to Tournaments of this sport
+        tournaments = Tournament.objects.filter(sport=sport)
+        for tournament in tournaments:
+            Attendance.objects.filter(tournament_id=tournament).delete()
+        # Delete Students of this sport
+        students.delete()
+    except Exception:
+        pass
     sport.delete()
     messages.success(request,'Sport Are Successfully Deleted !')
 
@@ -301,8 +326,21 @@ def UPDATE_STAFF(request):
 
 @login_required(login_url='/')
 def DELETE_STAFF(request,admin):
-    staff = CustomUser.objects.get(id = admin)
-    staff.delete()
+    staff_user = CustomUser.objects.get(id=admin)
+    try:
+        staff = Staff.objects.get(admin=staff_user)
+        from app.models import Staff_Notification, Staff_Leave, Staff_Feedback, Tournament, Attendance
+        Staff_Notification.objects.filter(staff_id=staff).delete()
+        Staff_Leave.objects.filter(staff_id=staff).delete()
+        Staff_Feedback.objects.filter(staff_id=staff).delete()
+        # Delete Attendance related to Tournaments of this staff
+        tournaments = Tournament.objects.filter(staff=staff)
+        for tournament in tournaments:
+            Attendance.objects.filter(tournament_id=tournament).delete()
+        tournaments.delete()
+    except Staff.DoesNotExist:
+        pass
+    staff_user.delete()
     messages.success(request,'Record Are Successfully Deleted !')
     return redirect('view_staff')
 
@@ -339,8 +377,20 @@ def ADD_TOURNAMENT(request):
 def VIEW_TOURNAMENT(request):
     tournament = Tournament.objects.all()
 
+    # Prepare list with created_at formatted for each tournament
+    tournament_list = []
+    for t in tournament:
+        tournament_list.append({
+            'id': t.id,
+            'name': t.name,
+            'sport': t.sport,
+            'staff': t.staff,
+            'created_at': t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else 'N/A',
+            'updated_at': t.updated_at.strftime('%Y-%m-%d %H:%M:%S') if t.updated_at else 'N/A',
+        })
+
     context = {
-        'tournament':tournament,
+        'tournament': tournament_list,
     }
 
     return render(request,'Hod/view_tournament.html',context)
@@ -368,6 +418,11 @@ def UPDATE_TOURNAMENT(request):
         sport_id = request.POST.get('sport_id')
         staff_id = request.POST.get('staff_id')
 
+        # Validate sport_id and staff_id
+        if sport_id == "Select Sport" or staff_id == "Select Staff":
+            messages.error(request, "Please select valid Sport and Staff.")
+            return redirect('edit_tournament', id=tournament_id)
+
         sport = Sport.objects.get(id = sport_id)
         staff = Staff.objects.get(id = staff_id)
 
@@ -383,9 +438,20 @@ def UPDATE_TOURNAMENT(request):
     
 @login_required(login_url='/')
 def DELETE_TOURNAMENT(request,id):
-    tournament = Tournament.objects.filter(id = id)
-    tournament.delete()
-    messages.success(request,'Tournament Are Successfully Deleted !')
+    try:
+        tournament = Tournament.objects.get(id=id)
+        from app.models import Attendance, Attendance_Report
+        # Delete Attendance_Report related to Attendance of this tournament
+        attendances = Attendance.objects.filter(tournament_id=tournament)
+        for attendance in attendances:
+            Attendance_Report.objects.filter(attendance_id=attendance).delete()
+        # Delete Attendance related to this tournament
+        attendances.delete()
+        # Delete the tournament
+        tournament.delete()
+        messages.success(request,'Tournament Are Successfully Deleted !')
+    except Tournament.DoesNotExist:
+        messages.error(request,'Tournament Not Found!')
     return redirect('view_tournament')
 
 @login_required(login_url='/')
@@ -440,6 +506,19 @@ def UPDATE_SESSION(request):
 @login_required(login_url='/')
 def DELETE_SESSION(request,id):
     session = Session_Year.objects.get(id = id)
+    try:
+        from app.models import Student, Attendance, Attendance_Report
+        # Delete Attendance_Report related to Attendance of this session
+        attendances = Attendance.objects.filter(session_year_id=session)
+        for attendance in attendances:
+            Attendance_Report.objects.filter(attendance_id=attendance).delete()
+        # Delete Attendance related to this session
+        attendances.delete()
+        # Delete Students of this session
+        students = Student.objects.filter(session_year_id=session)
+        students.delete()
+    except Exception:
+        pass
     session.delete()
     messages.success(request,'Session Are Successfully Deleted !')
     return redirect('view_session')
@@ -606,8 +685,16 @@ def VIEW_ATTENDANCE(request):
             session_year_id = request.POST.get('session_year_id')
             attendance_date = request.POST.get('attendance_date')
 
-            get_tournament = Tournament.objects.get(id = tournament_id)
-            get_session_year = Session_Year.objects.get(id = session_year_id)
+            # Validate tournament_id and session_year_id are integers and not default strings
+            try:
+                tournament_id_int = int(tournament_id)
+                session_year_id_int = int(session_year_id)
+            except (ValueError, TypeError):
+                messages.error(request, "Please select valid Tournament and Session Year.")
+                return redirect('view_attendance')
+
+            get_tournament = Tournament.objects.get(id = tournament_id_int)
+            get_session_year = Session_Year.objects.get(id = session_year_id_int)
             attendance = Attendance.objects.filter(tournament_id = get_tournament, attendance_data = attendance_date)
             for i in attendance:
                 attendance_id = i.id

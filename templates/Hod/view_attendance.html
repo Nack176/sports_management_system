@@ -112,7 +112,7 @@
                                                <tbody>
                                                  {% for i in attendance_report %}
                                                   <tr>
-                                                     <td>{{i.student_id.admin.id}}</td>
+                                                     <td>{{ forloop.counter }}</td>
                                                      
                                                      <td>{{i.student_id.admin.first_name}}&nbsp;{{i.student_id.admin.last_name}}</td>
                                                      

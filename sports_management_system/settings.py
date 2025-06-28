@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-n@0*4iug0(_ra$)&tyx2_3-zailv$ed=v6&kpfe+a*qh19@ojc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -76,12 +76,14 @@ WSGI_APPLICATION = 'sports_management_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-import os
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sports_management_system',
+        'USER': 'root',
+        'PASSWORD': 'Nainesh@17',
+        'HOST': 'localhost',  # or the hostname where your MySQL server is running
+        'PORT': '3306',      # or the port on which your MySQL server is listening
     }
 }
 
@@ -133,4 +135,4 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-AUTH_USER_MODEL = 'app.CUstomUser'
+AUTH_USER_MODEL = 'app.CustomUser'
