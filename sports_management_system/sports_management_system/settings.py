@@ -131,4 +131,9 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+import os
+
 AUTH_USER_MODEL = 'app.CustomUser'
+
+# Global environment variable example
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
